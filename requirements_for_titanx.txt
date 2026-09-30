@@ -1,0 +1,12 @@
+ipykernel==7.2.0
+matplotlib
+numpy
+pandas
+progressbar33==2.4
+scipy
+torch==2.0.1
+torchaudio==2.0.2
+torchcodec
+scikit-learn
+librosa
+pyroomacoustics
