@@ -107,3 +107,10 @@ datasets/
 tmp/
 temp/
 *.tmp
+
+# =========================
+# Documents
+# =========================
+
+documents/
+.pdf
