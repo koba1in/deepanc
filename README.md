@@ -30,7 +30,28 @@ DeepANC の論文「Deep ANC: A deep learning approach to active noise control�
 
 ## 必要環境とインストール
 
-`pyproject.toml` は Python 3.9 以上を指定しています。ノートブックを実行するには、リポジトリのルートで仮想環境を作成し、`normal` extra とともにパッケージをインストールします。
+`pyproject.toml` では、パッケージ名を `DeepANC`、バージョンを `0.1.0`、Python の下限を `3.9` としています。ビルドには PEP 517 の `uv_build`（`>=0.12.19,<0.13.0`）を使います。必須依存関係は `[project.dependencies]` には定義されておらず、依存パッケージは `[project.optional-dependencies]` の `normal`、`titanx`、`dev` extras に分けて定義されています。メタデータ上の開発段階は Alpha です。`[project.urls]` テーブルはありますが、現在 URL は登録されていません。
+
+### uv を使う場合
+
+`uv` をインストールしたうえで、プロジェクトのルートで実行します。`uv sync` は仮想環境を作成し、プロジェクト本体も editable モードでインストールします。
+
+```bash
+# 通常の実行環境
+uv pip install -e ".[normal]"
+
+# Titan X 向けの依存セットを使う場合は、normal の代わりに選択
+uv pip install -e ".[titanx]"
+
+# 開発ツールも追加する場合（pytest、ruff）
+uv pip install -e ".[normal]" ".[dev]"
+```
+
+`normal` と `titanx` は、それぞれ異なる PyTorch / torchaudio のバージョンを指定する環境セットです。通常はどちらか一方を選んでください。`dev` も optional extra として定義されているため、使う場合は `--extra dev` を明示します。
+
+### pip を使う場合
+
+Python 3.9 以上の仮想環境を有効にし、リポジトリのルートでインストールします。
 
 ```bash
 python -m venv .venv
@@ -42,7 +63,11 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[normal]"
 ```
 
-GPU を利用する場合は、利用する OS・CUDA 環境に合った PyTorch と torchaudio を選んでください。`pyproject.toml` の `titanx` extra は特定環境向けの依存バージョンを記載しています。環境に合うことを確認してから利用してください。
+pip は `pyproject.toml` の build-system 設定に従って `uv_build` をビルド環境に用意します。Titan X 向けまたは開発用 extras は、最後のコマンドを `-e ".[titanx]"`、`-e ".[normal,dev]"` のように必要なセットへ変更してください。
+
+`[tool.setuptools.packages.find]` も `pyproject.toml` にありますが、現在指定されているビルドバックエンドは `uv_build` です。その setuptools 用設定は `uv_build` のパッケージ検出を構成するものではありません。プロジェクトのパッケージ構造は `src/deepanc/` にあります。
+
+GPU を使う場合、PyTorch / torchaudio の CUDA 対応状況は OS、Python、CUDA 環境によって異なります。必要に応じて環境に合う PyTorch の配布元・ビルドを確認してください。
 
 ## データと生成物
 
