@@ -1,10 +1,11 @@
-from common.utils import loss, nmse, stft, spec_to_antinoise, loading_paths_from_MAT, apply_impulse_response, check_finite
 import torch
-import os
 from torch.utils.data import DataLoader
 import torch.optim as optim
-from common.Network import crn_model
-from common.MyDataLoader import MyDataset
+import math
+from pathlib import Path
+from deepanc.common.Network import crn_model
+from deepanc.common.MyDataLoader import MyDataset
+from deepanc.common.utils import loss, nmse, stft, spec_to_antinoise, loading_paths_from_MAT, apply_impulse_response
 
 BATCH_SIZE = 250
 EPOCHS = 30
@@ -111,7 +112,7 @@ def train(model, data_loader, eva_data_loader, epochs, device, Paths, delay, ETA
         print("------------------------------")
     print("Finished training")
     return train_loss_epochs, nmse_min_train, validate_loss_epochs, nmse_min
-import math
+
 def train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, MODEL_PTH, rirsdir, Pri_Path, Sec_Path, delay, Pri_path_name="Pz1", Sec_path_name="S", batch_size=100, epochs=None, parallel=True):
     dtype = torch.float32
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -130,8 +131,7 @@ def train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, MO
     validate_data = MyDataset(VALIDATION_DATASET_BASE_FOLDER)
     data_loader = create_data_loader(train_data, effective_batch_size, shuffle=True, device=device)
     validate_dataloader = create_data_loader(validate_data, effective_batch_size, shuffle=False, device=device)
-    
-    rirs = os.listdir(rirsdir)
+    rirs = Path(rirsdir).iterdir()
     paths = [torch.tensor(loading_paths_from_MAT(rirsdir, rir, Pri_Path, Sec_Path, Pri_path_name, Sec_path_name), dtype=dtype).unsqueeze(1) for rir in rirs]
     paths = torch.stack(paths)
     paths = paths.to(device)

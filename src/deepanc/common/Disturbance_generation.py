@@ -1,8 +1,6 @@
 import numpy as np
-import math 
 import matplotlib.pyplot as plt
-from numpy.core.fromnumeric import repeat 
-from scipy import signal, misc
+from scipy import signal
 import torch
 
 #-------------------------------------------------------------

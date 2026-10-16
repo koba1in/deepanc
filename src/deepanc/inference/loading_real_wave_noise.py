@@ -1,9 +1,8 @@
-import os 
+from pathlib import Path 
 import torch
 import torchaudio
 import torchaudio.transforms as T
 import matplotlib.pyplot as plt
-import scipy.signal as signal
 # import soundfile
 
 #--------------------------------------------------------------
@@ -89,12 +88,12 @@ def resample_wav(waveform, sample_rate, resample_rate):
 #--------------------------------------------------------------
 def loading_real_wave_noise(folde_name, sound_name):
     """
-    waveform, sample_rate = soundfile.read(os.path.join(folde_name, sound_name))
+    waveform, sample_rate = soundfile.read(Path(folde_name)/sound_name)
     bandpass_filter = signal.firwin(1024, [20, 7980], pass_zero='bandpass', window ='hamming', fs=16000) # filter by bandpass filter
     waveform = signal.lfilter(bandpass_filter, 1, waveform) # numpy.ndarray
     waveform = torch.from_numpy(waveform).type(torch.float).unsqueeze(dim=0) # from numpy to tensor
     """
-    waveform, sample_rate = torchaudio.load(os.path.join(folde_name, sound_name))
+    waveform, sample_rate = torchaudio.load(Path(folde_name)/sound_name)
     resample_rate = 16000
     waveform = resample_wav(waveform, sample_rate, resample_rate) # resample
     return waveform, resample_rate
@@ -104,7 +103,7 @@ def loading_real_wave_noise(folde_name, sound_name):
 def main():
     folde_name = 'Real_noise'
     sound_name = 'Aircraft.wav'
-    SAMPLE_WAV_SPEECH_PATH = os.path.join(folde_name, sound_name)
+    SAMPLE_WAV_SPEECH_PATH = Path(folde_name)/sound_name
     waveform, sample_rate = torchaudio.load(SAMPLE_WAV_SPEECH_PATH)
     waveform = resample_wav(waveform, sample_rate, 16000)
     sample_rate = 16000

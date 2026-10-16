@@ -1,12 +1,6 @@
 import torch
-import os
-import numpy as np
-from torch import nn
-import scipy.signal as signal
-import scipy.io as sio
-
-from common.Network import crn_model
-from common.utils import stft, spec_to_antinoise
+from deepanc.common.Network import crn_model
+from deepanc.common.utils import stft, spec_to_antinoise
 
 def load_weight_for_model(model, pretrained_path, device):
     model_dict = model.state_dict()
@@ -17,11 +11,6 @@ def load_weight_for_model(model, pretrained_path, device):
         model_dict[k] = pretrained_dict[k]
     model.load_state_dict(model_dict)
     
-def minmaxscaler(data):
-    min = data.min()
-    max = data.max()
-    return (data)/(max-min)
-
 class Deep_ANC_controller():
     
     def __init__(self, MODEL_PATH, device, fs, delay, eta, secondary_path):
