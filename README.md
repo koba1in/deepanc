@@ -34,7 +34,7 @@ DeepANC の論文「Deep ANC: A deep learning approach to active noise control�
 
 ### uv を使う場合
 
-`uv` をインストールしたうえで、プロジェクトのルートで実行します。`uv sync` は仮想環境を作成し、プロジェクト本体も editable モードでインストールします。
+`uv` をインストールしたうえで、プロジェクトのルートで実行します。プロジェクト本体をeditable モードでインストールします。
 
 ```bash
 # 通常の実行環境
