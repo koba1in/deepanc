@@ -90,6 +90,7 @@ results/
 
 data/
 datasets/
+NOISEX92/
 
 # MATLAB
 *.mat

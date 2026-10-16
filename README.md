@@ -85,3 +85,8 @@ Jupyter が起動できない場合は、環境に `ipykernel` と Notebook 実�
 ```
 
 ノートブック内で使う相対パスを合わせるため、各ノートブックはそれぞれ記載のサブディレクトリをカレントディレクトリとして実行してください。
+
+
+テストデータNOISEX92に関して
+取得元:zendo, Speech and noise Corpora for Pitch Estimation of Human Speech
+取得元url:https://zenodo.org/records/3921794

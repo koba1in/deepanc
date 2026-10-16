@@ -5,8 +5,6 @@ from deepanc.common.utils import stft, spec_to_antinoise
 def load_weight_for_model(model, pretrained_path, device):
     model_dict = model.state_dict()
     pretrained_dict = {k.replace("module.", "", 1): v for k, v in torch.load(pretrained_path, map_location=device).items()}
-    print(model_dict.keys())
-    print(pretrained_dict.keys())
     for k, v in model_dict.items():
         model_dict[k] = pretrained_dict[k]
     model.load_state_dict(model_dict)

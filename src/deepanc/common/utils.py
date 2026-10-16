@@ -1,6 +1,9 @@
 import torch
 import torch.nn.functional as F
 import math
+from pathlib import Path
+import scipy.io as sio
+import numpy as np
 
 N_FFT = 320
 HOP_LENGTH = 160
@@ -80,17 +83,17 @@ def nmse(err, dis):
     denominator = dis.square().sum().clamp_min(1e-12)
     return 10 * torch.log10(numerator / denominator)
 
+def minmaxscaler(data):
+    min = data.min()
+    max = data.max()
+    return (data)/(max-min)
 
-import os
-import scipy.io as sio
-import numpy as np
 def loading_paths_from_MAT(folder, subfolder, Pri_Path, Sec_Path, Pri_path_name="Pz1", Sec_path_name="S"):
-    Pri_Path_file, Sec_Path_file = os.path.join(folder, subfolder, Pri_Path), os.path.join(folder, subfolder, Sec_Path)
+    Pri_Path_file, Sec_Path_file = Path(folder)/subfolder/Pri_Path, Path(folder)/subfolder/Sec_Path
     Pri_dfs, Sec_dfs = sio.loadmat(Pri_Path_file), sio.loadmat(Sec_Path_file)
     Pri_path, Sec_path = Pri_dfs[Pri_path_name].squeeze(), Sec_dfs[Sec_path_name].squeeze()
     Pri_path, Sec_path = Pri_path.astype(np.float32), Sec_path.astype(np.float32)
     return [Pri_path, Sec_path]
-
 
 def check_finite(name, x):
     print(
