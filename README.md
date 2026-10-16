@@ -1,92 +1,117 @@
 # DeepANC
 
-DeepANC 論文の手法を Python で実装した実験用リポジトリです。Python モジュールは `src/` にあり、実験は Jupyter Notebook から実行します。
+DeepANC の論文「Deep ANC: A deep learning approach to active noise control」の手法を実装した研究・実験用 Python プロジェクトです。合成雑音の生成、室内インパルス応答（RIR）の生成、ネットワーク学習、ANC 推論のサンプルを Jupyter Notebook で実行できます。
+
+このリポジトリは実験コードを提供します。音声データ、RIR、学習済みモデルは含まれておらず、ノートブックもそれらを自動ダウンロードしません。
 
 ## ディレクトリ構成
 
 ```text
 .
-├── 1.Synthesize_data/              # 合成学習音声と室内インパルス応答の生成
-├── 2.Train_Network/                # ネットワークの学習
-├── 3.Noise_Cancellation_Code/      # ノイズキャンセルの推論・評価
+├── notebooks/
+│   ├── 1.Synthesize_data/
+│   │   ├── make_synthesized_data.ipynb  # 学習・検証・テスト用の合成雑音を作成
+│   │   └── make_rir.ipynb               # シミュレーション RIR を作成
+│   ├── 2.Train_Network/
+│   │   └── Train_Network.ipynb          # モデルを学習
+│   └── 3.Noise_Cancellation_Code/
+│       └── Noise_Cancellation.ipynb     # 学習済みモデルで ANC を実行・評価
 ├── src/
-│   ├── common/                     # モデル、データローダー、信号処理
-│   ├── synthesize/                 # 合成音声生成
-│   ├── train/                      # 学習処理
-│   └── inference/                  # 推論処理
-├── pyproject.toml                  # src レイアウトの Python パッケージ設定
-└── requirements_for_titanx.txt     # 実験環境の依存パッケージ
+│   └── deepanc/
+│       ├── common/                      # ネットワーク、データローダー、信号処理
+│       ├── synthesize/                  # 合成信号の生成
+│       ├── train/                       # 学習処理
+│       └── inference/                   # 推論・実録音源の読み込み
+├── tests/
+│   └── test_import.py
+├── pyproject.toml                       # パッケージと依存関係の設定
+└── .gitignore
 ```
 
-## GitHub に含まれないファイル
+## 必要環境とインストール
 
-`.gitignore` の設定により、次のファイルやディレクトリは通常 GitHub にアップロードされません。
-
-- `documents/`（論文 PDF など）
-- `Dataset/`、`datasets/`、`data/` 内のデータ
-- `*.wav`、`*.mp3`、`*.flac` の音声ファイル
-- `*.mat` の室内音響応答ファイル
-- `models/` は名前では除外されませんが、`*.pth`、`*.pt`、`*.ckpt` の学習済み重みは除外されます
-- `checkpoints/`、`outputs/`、`results/`、`runs/`、`tensorboard/` などの実験出力
-- 仮想環境、Python キャッシュ、Jupyter checkpoint、ログ、`.env` など
-
-そのため、クローン直後にはデータセット、RIR、学習済み重み、論文 PDF が存在しない場合があります。論文 PDF は別途入手して `documents/` に置いてください。実録騒音を使う場合は、利用許可のある音源を別途準備してください。音源・重みなどを Git に追加する場合は、`.gitignore` の対象であることを確認してください。
-
-### 参考論文と入手元
-
-`documents/` に置く論文の掲載元・ランディングページは以下のとおりです。本文や PDF の入手可否は出版社・会議の公開条件に従ってください。
-
-- Ke Tan and DeLiang Wang, “Complex Spectral Mapping with a Convolutional Recurrent Network for Monaural Speech Enhancement,” ICASSP 2019. [IEEE Xplore](https://ieeexplore.ieee.org/document/8682834)
-- Hao Zhang and DeLiang Wang, “Deep ANC: A deep learning approach to active noise control,” *Neural Networks*, 141, 1–10 (2021). [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0893608021001258)
-- Fei Gao et al., “Efficient Sequence Learning with Group Recurrent Networks,” NAACL-HLT 2018. [ACL Anthology](https://aclanthology.org/N18-1073/)
-- Hao Zhang and DeLiang Wang, “Deep MCANC: A Deep Learning Approach to Multi-Channel Active Noise Control,” *Neural Networks*, 158, 318–327 (2023). [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S0893608022004701)
-
-## 実行環境の準備
-
-Python 環境を有効化したうえで、リポジトリのルートで次を実行します。
+`pyproject.toml` は Python 3.9 以上を指定しています。ノートブックを実行するには、リポジトリのルートで仮想環境を作成し、`normal` extra とともにパッケージをインストールします。
 
 ```bash
-python -m pip install -r requirements_for_titanx.txt
-python -m pip install -e .
+python -m venv .venv
+# macOS / Linux
+source .venv/bin/activate
+# Windows PowerShell の場合: .venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -e ".[normal]"
 ```
 
-`pyproject.toml` は `src/` 配下を `synthesize`、`train`、`common`、`inference` としてインストールする設定です。依存パッケージのバージョンは `requirements_for_titanx.txt` を参照してください。記載された PyTorch / torchaudio の組み合わせや GPU 利用可否は環境に合わせて調整が必要な場合があります。
+GPU を利用する場合は、利用する OS・CUDA 環境に合った PyTorch と torchaudio を選んでください。`pyproject.toml` の `titanx` extra は特定環境向けの依存バージョンを記載しています。環境に合うことを確認してから利用してください。
 
-Jupyter が起動できない場合は、環境に `ipykernel` と Notebook 実行環境を用意してください。
+## データと生成物
 
-## 合成音声による動作確認
-
-このリポジトリで確認しやすい学習手順は、`1.Synthesize_data/make_synthesized_data.ipynb` で生成する合成バンド制限ノイズを使うものです。ノートブックはサンプリング周波数 16 kHz、長さ 10 秒、周波数帯域 20–7980 Hz の音声を 20,000 個生成し、`Dataset/train20000/` に保存します。
-
-1. `1.Synthesize_data/make_synthesized_data.ipynb` を開き、リポジトリルートをカレントディレクトリとして実行します。`PROJECT_ROOT = Path.cwd().parent` としているため、このノートブックのカレントディレクトリは `1.Synthesize_data/` にしてください。生成には十分なディスク容量が必要です。
-2. 必要に応じて `1.Synthesize_data/make_rir.ipynb` を実行します。シミュレーションした室内応答を `rirs/rt60_...s/` に `.mat` ファイルとして生成します。
-3. 生成した音声を `Dataset/train/` と `Dataset/validate/` に分けて配置します。`2.Train_Network/Train_Network.ipynb` はこの2ディレクトリを読み込みます。音声生成ノートブックの保存先は `Dataset/train20000/` なので、学習前にファイルを学習用・検証用へ分割してください。`MyDataset` は指定フォルダー直下のファイルを読み込むため、サブフォルダーに分けず WAV ファイルを直接配置します。
-4. `2.Train_Network/Train_Network.ipynb` を開き、カレントディレクトリを `2.Train_Network/` にして実行します。既定設定では `rirs/` の応答を使い、30 エポック学習して、検証 NMSE が改善したモデルを `models/synth_delay_1.pth` に保存します。`Dataset/`、`rirs/`、`models/` はリポジトリルート直下に配置します。
-
-`make_rir.ipynb` は `rirs/` 以下の `.mat` ファイルを、学習ノートブックは `Dataset/train`、`Dataset/validate` の WAV と `models/` 以下の重みをそれぞれ必要とします。これらは `.gitignore` の対象を含むため、ノートブックを実行する前にローカルで作成してください。
-
-## 論文の実録騒音条件と、このリポジトリの実装
-
-論文では実録騒音を用いた学習・評価が記述されています。一方、このリポジトリで動作確認しやすい `make_synthesized_data.ipynb` と `Train_Network.ipynb` の学習フローは、合成バンド制限ノイズを使います。学習コードは WAV を読み込み、シミュレーションした一次経路・二次経路をランダムに適用して学習データを構成します。したがって、この合成音声による学習は、論文の実録騒音を使った学習条件そのものではなく、実装の動作確認用の手順です。
-
-`3.Noise_Cancellation_Code/Noise_Cancellation.ipynb` には実録音源の読み込み処理があります。評価に使う WAV を `Dataset/disturbance/` に置き、ノートブックの `sound_name` をそのファイル名に変更してください。ローダーは音源を読み込み、16 kHz にリサンプリングします。ノートブックの例の `1_from_1733_to_2243_Hz.wav` はファイル名の例にすぎず、リポジトリには音源が含まれません。
-
-実録騒音を用いた学習を再現するには、論文で指定された実録音源・学習データの分割・収録条件を確認し、学習用音声を `Dataset/train/` と `Dataset/validate/` に用意してください。現在の学習コードはこれらのフォルダー内の WAV をデータとして読み込みますが、合成音声生成ノートブックが自動で実録音源を用意したり、データを分割したりはしません。論文 PDF は `documents/` 以下で参照できる想定ですが、このディレクトリは GitHub には含まれません。
-
-## ノートブックの実行順
+ノートブックは `pyprojroot.here()` でプロジェクトルートを見つけ、以下のディレクトリを読み書きします。必要なディレクトリは、生成ノートブックまたは学習ノートブックが作成するものもあります。
 
 ```text
-1.Synthesize_data/make_synthesized_data.ipynb   合成学習音声を生成
-1.Synthesize_data/make_rir.ipynb                シミュレーション RIR を生成
-                 ↓ Dataset/train と Dataset/validate を用意
-2.Train_Network/Train_Network.ipynb              モデルを学習
-                 ↓ models/synth_delay_1.pth
-3.Noise_Cancellation_Code/Noise_Cancellation.ipynb  実録音源でノイズキャンセルを評価
+Dataset/
+├── train/       # 学習用 WAV（直下に配置）
+├── validate/    # 検証用 WAV（直下に配置）
+└── test/        # 推論・評価用 WAV（直下に配置）
+rirs/
+└── rt60_0.2s/   # Primary_path.mat、Secondary_path.mat など
+models/          # 学習済み重み
+figs/rirs/       # RIR ノートブックの図
 ```
 
-ノートブック内で使う相対パスを合わせるため、各ノートブックはそれぞれ記載のサブディレクトリをカレントディレクトリとして実行してください。
+`.gitignore` は `NOISEX92/`、`*.wav`、`*.mat`、`*.pth` などを除外します（`Dataset/` ディレクトリ自体を指定した除外ルールはありませんが、配下の WAV は Git の対象外です）。これらのデータや生成物はローカルで用意してください。`MyDataset` は指定したフォルダー直下のファイルを読み込むため、WAV を追加のサブフォルダーに入れず `Dataset/train/` または `Dataset/validate/` に配置します。
 
+## ノートブックによる基本実行手順
 
-テストデータNOISEX92に関して
-取得元:zendo, Speech and noise Corpora for Pitch Estimation of Human Speech
-取得元url:https://zenodo.org/records/3921794
+Jupyter からリポジトリのノートブックを開いてください。各ノートブックは `pyprojroot` でルートを特定するため、ノートブックのカレントディレクトリを手動で切り替える必要はありません。処理は次の順で進めます。
+
+### 1. 合成雑音を作成
+
+`notebooks/1.Synthesize_data/make_synthesized_data.ipynb` を実行します。現在のノートブックの設定では、サンプリング周波数 16 kHz、長さ 10 秒、帯域 20–7,980 Hz の信号を次の場所に生成します。
+
+- `Dataset/train/`：2,000 件
+- `Dataset/validate/`：2,000 件
+- `Dataset/test/`：5 件（テスト用セルは 5 回、1 件ずつ生成）
+
+テスト用セルは合成信号を作る設定です。NOISEX-92 や実録騒音のダウンロード・配置は行いません。
+
+### 2. RIR を作成
+
+`notebooks/1.Synthesize_data/make_rir.ipynb` を実行します。室寸法や RT60 の設定に基づいて `.mat` ファイルを生成します。既定では `rirs/rt60_0.15s/` から `rirs/rt60_0.25s/` までの各フォルダーに、一次経路 `Primary_path.mat` と二次経路 `Secondary_path.mat` を保存します。
+
+### 3. モデルを学習
+
+`notebooks/2.Train_Network/Train_Network.ipynb` を実行します。`Dataset/train/`、`Dataset/validate/` と `rirs/` を使い、既定では 30 エポック学習します。検証 NMSE が更新された時点の重みを次のファイルに保存します。
+
+```text
+models/synth_delay_1.pth
+```
+
+学習コードは利用可能な場合に CUDA を使い、GPU が複数ある場合は DataParallel を有効にします。
+
+### 4. ANC 推論・評価
+
+`notebooks/3.Noise_Cancellation_Code/Noise_Cancellation.ipynb` を実行します。設定してある RIR フォルダー、テスト WAV、モデルのパスやファイル名を、実際に用意したものに合わせてください。既定の入力 WAV 名は `1_from_1733_to_2243_Hz.wav` です。合成ノートブックの生成ファイル名と一致しないことがあるため、`Dataset/test/` にある実ファイル名へ `sound_name` を変更してください。
+
+このノートブックは `models/synth_delay_1.pth` と指定した RIR を読み込み、ANC オフ・オンの波形比較、NMSE の計算、`GFANC.png` の出力を行います。実録騒音を評価する場合は、利用許諾のある WAV を用意し、そのファイル名に設定してください。`loading_real_wave_noise` は音源を読み込み 16 kHz にリサンプリングします。
+
+## NOISEX-92
+
+テストデータとして NOISEX-92 を利用する場合、データは別途入手し、必要な音源をノートブックが読む WAV 形式・配置に合わせて準備してください。このリポジトリにはデータ本体や自動取得処理は含まれていません。
+
+データセットの参照先：[Speech and noise Corpora for Pitch Estimation of Human Speech (Zenodo)](https://zenodo.org/records/3921794)
+
+## パッケージの利用
+
+インストール後は、`deepanc` 以下のモジュールをインポートできます。
+
+```python
+from deepanc.synthesize.Synthesize_data import SoundGenerator
+from deepanc.train.Train import train_validate
+from deepanc.inference.loading_real_wave_noise import loading_real_wave_noise
+```
+
+## 再現性に関する注意
+
+合成ノートブックによる学習は、用意した WAV にシミュレーション RIR を適用する実験フローです。実録騒音を使う論文条件の再現には、論文で指定された音源、データ分割、収録・評価条件を別途確認して準備してください。既定の合成データ生成数や RIR 条件はノートブック内で変更できます。
+
