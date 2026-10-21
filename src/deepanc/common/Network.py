@@ -3,11 +3,11 @@ import torch.nn
 
 class ConvBlock(torch.nn.Module):
     
-    def __init__(self, prev_channels, channels, conv_kernels, conv_strides, conv_padding, alpha):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, alpha=1):
         super().__init__()
         self.conv = torch.nn.Sequential(
-            torch.nn.Conv2d(prev_channels, channels, conv_kernels, conv_strides, conv_padding, ),
-            torch.nn.BatchNorm2d(channels),
+            torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, ),
+            torch.nn.BatchNorm2d(out_channels),
             torch.nn.ELU(alpha)
         )
     
@@ -15,93 +15,29 @@ class ConvBlock(torch.nn.Module):
         # identity = x
         x = self.conv(x)
         return x
-    
+
 class DecBlock(torch.nn.Module):
     
-    def __init__(self, prev_channels, channels, conv_kernels, conv_strides, conv_padding, output_padding, alpha, activate=True):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, alpha=1, activate=True):
         super().__init__()
+
+        self.conv_transpose = torch.nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding)
+        self.activate = activate
         if activate:
-            self.dec = torch.nn.Sequential(
-                torch.nn.ConvTranspose2d(prev_channels, channels, conv_kernels, conv_strides, conv_padding, output_padding),
-                torch.nn.BatchNorm2d(channels),
+            self.activate = torch.nn.Sequential(
+                torch.nn.BatchNorm2d(out_channels),
                 torch.nn.ELU(alpha)
             )
-        else:
-            self.dec = torch.nn.Sequential(
-                torch.nn.ConvTranspose2d(prev_channels, channels, conv_kernels, conv_strides, conv_padding, output_padding),
-                # torch.nn.BatchNorm2d(channels),
-            )
-        
-    def forward(self, id, x):
-        x = torch.concat((id, x), dim=1)
-        x = self.dec(x)
-        return x
-    
-class CRN(torch.nn.Module):
-    
-    def __init__(self, channels, ):
-        # [2, T, 320]
-        super().__init__()
-        
-        prev_channel = 2
-        conv_kernel = (1, 3)
-        conv_stride = (1, 2)
-        conv_padding = (0, 0)
-        output_padding = (0, 0)
-        alpha = 1
-        self.ConvBlocks = torch.nn.ModuleList()
-        for channel in channels:
-            self.ConvBlocks.append(ConvBlock(prev_channel, channel, conv_kernel, conv_stride, conv_padding, alpha ))
-            prev_channel = channel
-        
-        input_size = 1024
-        hidden_size = 1024
-        num_layers = 2
-        self.RNNBlocks = RNNBlock(input_size, hidden_size, num_layers, alpha)
-        self.DecBlocksReal = torch.nn.ModuleList()
-        self.DecBlocksImage = torch.nn.ModuleList()
-        for i in range(-2, -len(channels), -1):
-            channel = channels[i]
-            self.DecBlocksReal.append(DecBlock(prev_channel*2, channel, conv_kernel, conv_stride, conv_padding, output_padding, alpha))
-            self.DecBlocksImage.append(DecBlock(prev_channel*2, channel, conv_kernel, conv_stride, conv_padding, output_padding, alpha))
-            prev_channel = channel
-        channel = channels[0]
-        output_padding = (0, 1)
-        self.DecBlocksReal.append(DecBlock(prev_channel*2, channel, conv_kernel, conv_stride, conv_padding, output_padding, alpha))
-        self.DecBlocksImage.append(DecBlock(prev_channel*2, channel, conv_kernel, conv_stride, conv_padding, output_padding, alpha))
-        prev_channel = channel
-        output_padding = (0, 0)
-        self.DecBlocksReal.append(DecBlock(prev_channel*2, 1, conv_kernel, conv_stride, conv_padding, output_padding, alpha, activate=False))
-        self.DecBlocksImage.append(DecBlock(prev_channel*2, 1, conv_kernel, conv_stride, conv_padding, output_padding, alpha, activate=False))  
 
-    def forward(self, x):
-        #x: [Batch, channel, T, 161]
-        res = []
-        for ConvBlock in self.ConvBlocks:
-            x = ConvBlock(x)
-            res.append(x)
-        x = torch.permute(x, (0, 2, 1, 3))
-        x = x.reshape(x.size(0), x.size(1), -1)
-        #x: [Batch, T, 1024]
-        x = self.RNNBlocks(x)
-        x = x.reshape(x.size(0), x.size(1), 256, 4)
-        x = torch.permute(x, (0, 2, 1, 3))
-        #x: [Batch, channel, T, 4]
-        x_real = None
-        x_image = None
-        for DecBlockReal, DecBlockImage in zip(self.DecBlocksReal, self.DecBlocksImage):
-            id = res.pop()
-            if x_real is None:
-                x_real = DecBlockReal(id, x)
-                x_image = DecBlockImage(id, x)
-            else:
-                x_real = DecBlockReal(id, x_real)
-                x_image = DecBlockImage(id, x_image)
-        x = torch.concat((x_real, x_image), dim=1)
-        #x: [Batch, 2, T, 161]
+    def forward(self, id, x, output_size):
+        x = torch.concat((id, x), dim=1)
+        x = self.conv_transpose(x, output_size=output_size)
+        if self.activate:
+            x = self.activate(x)
         return x
 
 class RNNBlock(torch.nn.Module):
+
     def __init__(self, input_size, hidden_size, num_layers, groups=2):
         super().__init__()
 
@@ -144,5 +80,77 @@ class RNNBlock(torch.nn.Module):
                 )
 
         return x
+
+class CRN(torch.nn.Module):
+    
+    def __init__(self, channels, ):
+        # [2, T, 320]
+        super().__init__()
+        
+        prev_channel = 2
+        kernel_size = (1, 3)
+        stride = (1, 2)
+        padding = (0, 0)
+        alpha = 1
+
+        ConvBlocks = []
+        DecBlocksReal = []
+        DecBlocksImage = []
+
+        for channel in channels:
+            ConvBlocks.append(ConvBlock(prev_channel, channel, kernel_size, stride, padding, alpha))
+
+            if prev_channel == 2:
+                DecBlocksReal.append(DecBlock(2*channel, 1, kernel_size, stride, padding, activate=False))
+                DecBlocksImage.append(DecBlock(2*channel, 1, kernel_size, stride, padding, activate=False))
+            else:
+                DecBlocksReal.append(DecBlock(2*channel, prev_channel, kernel_size, stride, padding, alpha))
+                DecBlocksImage.append(DecBlock(2*channel, prev_channel, kernel_size, stride, padding, alpha))
+
+            prev_channel = channel
+
+        self.ConvBlocks = torch.nn.ModuleList(ConvBlocks)
+
+        self.DecBlocksReal = torch.nn.ModuleList(reversed(DecBlocksReal))
+        self.DecBlocksImage = torch.nn.ModuleList(reversed(DecBlocksImage))
+
+        self.RNNBlocks = RNNBlock(input_size=1024, hidden_size=1024, num_layers=2,)
+
+    def forward(self, x):
+        #x: [Batch, channel, T, 161]
+        res = []
+        sizes = []
+        sizes.append((x.size(0), 1, x.size(2), x.size(3)))
+        
+        for ConvBlock in self.ConvBlocks:
+            x = ConvBlock(x)
+            res.append(x)
+            sizes.append(x.size())
+        sizes.pop()
+        
+        x = torch.permute(x, (0, 2, 1, 3))
+        x = x.reshape(x.size(0), x.size(1), -1)
+        #x: [Batch, T, 1024]
+        x = self.RNNBlocks(x)
+        x = x.reshape(x.size(0), x.size(1), 256, 4)
+        x = torch.permute(x, (0, 2, 1, 3))
+        
+        #x: [Batch, channel, T, 4]
+        x_real = None
+        x_image = None
+        for DecBlockReal, DecBlockImage in zip(self.DecBlocksReal, self.DecBlocksImage):
+            id = res.pop()
+            size = sizes.pop()
+            if x_real is None:
+                x_real = DecBlockReal(id, x, size)
+                x_image = DecBlockImage(id, x, size)
+            else:
+                x_real = DecBlockReal(id, x_real, size)
+                x_image = DecBlockImage(id, x_image, size)
+        x = torch.concat((x_real, x_image), dim=1)
+        #x: [Batch, 2, T, 161]
+        return x
+
+
 
 crn_model = CRN(channels=[16, 32, 64, 128, 256])
