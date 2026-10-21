@@ -14,7 +14,7 @@ conflicts = [
 name = "DeepANC"
 version = "0.1.0"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 description = "Deep ANC: A deep learning approach to active noise control research code"
 classifiers = [
 	"Development Status :: 3 - Alpha",

@@ -24,7 +24,7 @@ def BandlimitFilter_generation(f_starts, Bandwidthes, fs, device, type=np.float3
     filters = np.stack([signal.firwin(numtaps, [f_start, f_end], pass_zero="bandpass", window="hamming", fs=fs).astype(type) for f_start, f_end in zip(f_starts, f_ends)])
     filters = torch.from_numpy(filters)
     if device.type == "cuda":
-        filters.pin_memory()
+        filters = filters.pin_memory()
     filters = torch.flip(filters, [-1])
     return filters
 
@@ -71,7 +71,7 @@ class SoundGenerator():
         tasks = list(zip(filenames, Noise))
         
         with ThreadPoolExecutor(max_workers=2) as executor:
-            executor.map(save_worker, tasks)
+            list(executor.map(save_worker, tasks))
         # for name, noise in zip(filenames, Noise):
         #     filePath = os.path.join(self.folder, name)
         #     torchaudio.save(filePath, noise.unsqueeze(0), self.fs)
