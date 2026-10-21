@@ -37,18 +37,6 @@ class DecBlock(torch.nn.Module):
         x = self.dec(x)
         return x
     
-# class RNNBlock(torch.nn.Module):
-    
-#     def __init__(self, input_size, hidden_size, num_layers, alpha):
-#         super().__init__()
-#         self.rnn = torch.nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-#         # self.elu = torch.nn.ELU(alpha)
-    
-#     def forward(self, x):
-#         x, _ = self.rnn(x)
-#         # x = self.elu(x)
-#         return x
-    
 class CRN(torch.nn.Module):
     
     def __init__(self, channels, ):
@@ -114,7 +102,7 @@ class CRN(torch.nn.Module):
         return x
 
 class RNNBlock(torch.nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, alpha=None, groups=2):
+    def __init__(self, input_size, hidden_size, num_layers, groups=2):
         super().__init__()
 
         if input_size % groups != 0 or hidden_size % groups != 0:
@@ -158,4 +146,3 @@ class RNNBlock(torch.nn.Module):
         return x
 
 crn_model = CRN(channels=[16, 32, 64, 128, 256])
-

@@ -28,10 +28,6 @@ def istft(stft):
     wave = torch.istft(stft_complex, N_FFT, HOP_LENGTH, window=window, center=False,)
     return wave
     
-# def fls(wave, etas):
-#     #wave: [Batch, T]
-#     #etas: [Batch, 1]
-#     return math.sqrt(math.pi / 2) * (etas * torch.erf(wave / (math.sqrt(2) * etas)))
 def fls(wave, etas):
     # wave: [Batch, T]
     # etas: [Batch, 1]
