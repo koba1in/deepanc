@@ -120,6 +120,28 @@ models/synth_delay_1.pth
 
 このノートブックは `models/synth_delay_1.pth` と指定した RIR を読み込み、ANC オフ・オンの波形比較、NMSE の計算、`GFANC.png` の出力を行います。実録騒音を評価する場合は、利用許諾のある WAV を用意し、そのファイル名に設定してください。`loading_real_wave_noise` は音源を読み込み 16 kHz にリサンプリングします。
 
+## Freesound 音源を学習データに使う場合
+
+このプロジェクトの `Dataset/train/`、`Dataset/validate/`、`Dataset/test/` に Freesound 音源を追加して、学習・評価用の素材として利用できます。取得には [construct-dataset-from-freesound](https://github.com/koba1in/construct-dataset-from-freesound) CLI を使えます。Hugging Face のトークンを設定したうえで、たとえば次のように取得します。
+
+```bash
+construct-dataset-from-freesound \
+  --split train test \
+  --path ./freesound_downloads \
+  --license CC0-1.0 CC-BY-4.0
+```
+
+CLI は音声を 16 kHz・モノラル・16-bit PCM の FLAC として、`freesound_downloads/train/` と `freesound_downloads/test/` に保存します。一方、このプロジェクトの `MyDataset` は `Dataset/` 配下の WAV ファイルを読み込むため、取得した FLAC をそのまま配置するのではなく、WAV に変換してから配置してください。
+
+データの準備手順:
+
+1. Freesound の元データセット `train` と `test` を取得します。
+2. FLAC を WAV に変換し、サンプリング周波数 16 kHz・モノラルを維持します。変換時にファイル名（Freesound ID）を保つと、元音源を追跡しやすくなります。
+3. `train` 音源を学習用と検証用に分け、それぞれ `Dataset/train/` と `Dataset/validate/` に置きます。元データセットの `test` 音源は最終評価用として `Dataset/test/` に置きます。同じ音源や同じ Freesound ID が複数の分割に入らないようにしてください。
+4. 学習ノートブックと `MyDataset` の入力条件に合わせて、音声長やファイル数を確認します。既定の合成データは 16 kHz・10 秒ですが、Freesound 音源の長さは一定ではありません。必要に応じて、学習コードが要求する長さに切り出すか、ゼロ埋めなどの前処理を行ってください。
+
+Freesound 音源のライセンスは作品ごとに異なります。取得対象を選ぶ際と、学習済みモデルや音源を公開・再配布する際には、各音源のライセンス条件（CC-BY の帰属表示など）を確認してください。CC-BY-NC 系のライセンスは商用利用に制限があります。
+
 ## NOISEX-92
 
 テストデータとして NOISEX-92 を利用する場合、データは別途入手し、必要な音源をノートブックが読む WAV 形式・配置に合わせて準備してください。このリポジトリにはデータ本体や自動取得処理は含まれていません。
@@ -139,4 +161,3 @@ from deepanc.inference.loading_real_wave_noise import loading_real_wave_noise
 ## 再現性に関する注意
 
 合成ノートブックによる学習は、用意した WAV にシミュレーション RIR を適用する実験フローです。実録騒音を使う論文条件の再現には、論文で指定された音源、データ分割、収録・評価条件を別途確認して準備してください。既定の合成データ生成数や RIR 条件はノートブック内で変更できます。
-

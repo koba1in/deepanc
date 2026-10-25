@@ -36,6 +36,7 @@ normal = [
 	"librosa==0.11.0",
 	"pyroomacoustics",
 	"pyprojroot",
+	"construct-dataset-from-freesound @ git+https://github.com/koba1in/construct-dataset-from-freesound.git",
 ]
 
 titanx = [
@@ -51,6 +52,8 @@ titanx = [
 	"librosa",
 	"pyroomacoustics",
 	"pyprojroot",
+	"pyarrow>=23, <24",
+	"construct-dataset-from-freesound @ git+https://github.com/koba1in/construct-dataset-from-freesound.git",
 ]
 
 dev = [
