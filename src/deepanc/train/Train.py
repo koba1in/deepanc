@@ -2,15 +2,17 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import math
-from pathlib import Path
+
 from deepanc.common.Network import crn_model
 from deepanc.common.MyDataLoader import MyDataset
 from deepanc.common.utils import loss, stft, spec_to_antinoise, loading_paths_from_MAT, apply_impulse_response
+from deepanc.common.collate import collate_fn
         
 def create_data_loader(train_data, batch_size, shuffle, device):
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
-    return DataLoader(train_data, batch_size, num_workers=2, pin_memory=(device.type=="cuda"), shuffle=shuffle)
+    
+    return DataLoader(train_data, batch_size, num_workers=2, pin_memory=(device.type=="cuda"),collate_fn=collate_fn, shuffle=shuffle)
 
 def forward_single_batch(signal, config, etas, pri_paths, sec_paths, eta_indices, path_indices, model, loss_fn):
     etas = etas[eta_indices].unsqueeze(1)
@@ -90,6 +92,7 @@ def train(model, train_loader, validation_loader, config, Paths, etas,):
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate, weight_decay=0, amsgrad=True)
     eta_indices = torch.randint(0, etas.shape[0], (len(validation_loader.dataset),)).to(config.device)
     path_indices = torch.randint(0, Paths.shape[0], (len(validation_loader.dataset),)).to(config.device)
+
     for i in range(config.epochs):
         print(f"Epoch {i+1}")
         print("Learning rate:", optimizer.param_groups[0]["lr"])
@@ -99,7 +102,7 @@ def train(model, train_loader, validation_loader, config, Paths, etas,):
         validate_loss_epochs.append(validate_loss)
         if nmse_min > validate_nmse:
             nmse_min_train, nmse_min = train_nmse, validate_nmse
-            if config.model_path is not None:
+            if config.best_model_selection & (config.model_path is not None):
                 torch.save(model.state_dict(), config.model_path)
                 print("Trained feed forward net saved at " + str(config.model_path)) 
         print("------------------------------")

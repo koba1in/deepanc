@@ -72,7 +72,5 @@ class SoundGenerator():
         
         with ThreadPoolExecutor(max_workers=2) as executor:
             list(executor.map(save_worker, tasks))
-        # for name, noise in zip(filenames, Noise):
-        #     filePath = os.path.join(self.folder, name)
-        #     torchaudio.save(filePath, noise.unsqueeze(0), self.fs)
+
         self.Num += batch

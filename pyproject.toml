@@ -54,11 +54,16 @@ titanx = [
 	"pyprojroot",
 	"pyarrow>=23, <24",
 	"construct-dataset-from-freesound @ git+https://github.com/koba1in/construct-dataset-from-freesound.git",
+	"seaborn",
 ]
 
 dev = [
 	"pytest",
 	"ruff",
+]
+
+polars = [
+	"polars",
 ]
 
 [tool.setuptools.packages.find]

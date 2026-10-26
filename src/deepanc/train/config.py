@@ -9,6 +9,7 @@ class TrainConfig:
     delay: int
 
     model_path: Path | None = None
+    best_model_selection: bool = False
     epochs: int = 30
     learning_rate: float = 0.001
     dtype: torch.dtype = torch.float32
