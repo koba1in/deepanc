@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import math
+import csv
 
 from deepanc.common.Network import crn_model
 from deepanc.common.MyDataLoader import MyDataset
@@ -12,9 +13,10 @@ def create_data_loader(train_data, batch_size, shuffle, device):
     if batch_size <= 0:
         raise ValueError("batch_size must be positive")
     
-    return DataLoader(train_data, batch_size, num_workers=2, pin_memory=(device.type=="cuda"),collate_fn=collate_fn, shuffle=shuffle)
+    return DataLoader(train_data, batch_size, num_workers=1, pin_memory=(device.type=="cuda"), collate_fn=collate_fn, shuffle=shuffle)
 
 def forward_single_batch(signal, config, etas, pri_paths, sec_paths, eta_indices, path_indices, model, loss_fn):
+    signal_length = signal.size(-1)
     etas = etas[eta_indices].unsqueeze(1)
     pri_paths = pri_paths[path_indices]
     sec_paths = sec_paths[path_indices]
@@ -22,7 +24,7 @@ def forward_single_batch(signal, config, etas, pri_paths, sec_paths, eta_indices
     signal = signal.squeeze(1)
     disturbance = apply_impulse_response(signal, pri_paths)
     signal = stft(signal, config.delay)
-    anti_noise = spec_to_antinoise(model(signal), sec_paths, etas)
+    anti_noise = spec_to_antinoise(model(signal), sec_paths, etas, length=signal_length)
     error = disturbance - anti_noise
     loss = loss_fn(disturbance, anti_noise)
     return loss, error.square().sum().item(), disturbance.square().sum().item()
@@ -40,7 +42,7 @@ def train_single_epoch(model, train_loader, loss_fn, optimizer, config, Paths, e
         batch_size = signal.size(0)
         eta_indices = torch.randint(0, etas.shape[0], (len(signal),)).to(config.device)
         path_indices = torch.randint(0, Paths.shape[0], (len(signal), )).to(config.device)
-
+        
         loss, e, dis = forward_single_batch(signal, config, etas, pri_paths, sec_paths, eta_indices, path_indices, model, loss_fn)
 
         loss.backward()
@@ -106,10 +108,16 @@ def train(model, train_loader, validation_loader, config, Paths, etas,):
                 torch.save(model.state_dict(), config.model_path)
                 print("Trained feed forward net saved at " + str(config.model_path)) 
         print("------------------------------")
+
+        if config.history_path is not None:
+            with open(config.history_path, mode="a", encoding="utf-8", newline="", ) as file:
+                writer = csv.writer(file)
+                writer.writerow([train_loss, validate_loss])
+
     print("Finished training")
     return train_loss_epochs, nmse_min_train, validate_loss_epochs, nmse_min
 
-def train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, config, path_config, parallel=True):
+def  train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, TRAIN_CSV, VALIDATION_CSV, config, path_config, history_dir, parallel=True):
 
     model = crn_model
     gpus = torch.cuda.device_count() if (config.device.type == "cuda") else 0
@@ -121,9 +129,16 @@ def train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, co
         model = torch.nn.DataParallel(model,)
 
     effective_batch_size = config.batch_size * num_devices
-    train_data = MyDataset(TRAIN_DATASET_BASE_FOLDER)
-    validate_data = MyDataset(VALIDATION_DATASET_BASE_FOLDER)
-    train_loader = create_data_loader(train_data, effective_batch_size, shuffle=True, device=config.device)
+
+    if config.history_path is not None:
+        config.history_path.touch()
+        with open(config.history_path, mode="a", encoding="utf-8", newline="", ) as file:
+            writer = csv.writer(file)
+            writer.writerow(["train_loss", "validate_loss"])
+
+    train_data = MyDataset(TRAIN_DATASET_BASE_FOLDER, TRAIN_CSV)
+    validate_data = MyDataset(VALIDATION_DATASET_BASE_FOLDER, VALIDATION_CSV)
+    train_loader = create_data_loader(train_data, effective_batch_size, shuffle=config.shuffle, device=config.device)
     validate_dataloader = create_data_loader(validate_data, effective_batch_size, shuffle=False, device=config.device)
     rirs = path_config.rir_dir.iterdir()
     paths = [torch.tensor(loading_paths_from_MAT(path_config.rir_dir, rir, path_config.primary_path_filename, path_config.secondary_path_filename, path_config.primary_path_name, path_config.secondary_path_name), dtype=config.dtype).unsqueeze(1) for rir in rirs]

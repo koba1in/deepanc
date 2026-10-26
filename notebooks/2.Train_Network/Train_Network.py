@@ -1,12 +1,15 @@
 from pyprojroot import here
 PROJECT_ROOT = here()
-DATASET_DIR = PROJECT_ROOT / "Dataset"
+DATASET_DIR = PROJECT_ROOT / "Datasets"
+CSV_DIR = DATASET_DIR / "statistics"
 MODEL_DIR = PROJECT_ROOT / "models"
 RIR_DIR = PROJECT_ROOT / "rirs"
+HISTORY_DIR = PROJECT_ROOT / "history"
 print(PROJECT_ROOT)
 print(MODEL_DIR)
 print(RIR_DIR)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
+HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
 
 
@@ -26,16 +29,15 @@ path_config = PathConfig(
 )
 
 delay = 1
-model_name = "delay_" + str(delay) + "v3.pth"
+model_name = "freesound_delay_" + str(delay)
 
 train_config = TrainConfig(
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-    batch_size=25,
+    batch_size=20,
     delay=delay,
-    model_path=MODEL_DIR/model_name,
+    model_path=MODEL_DIR/(model_name+".pth"),
+    history_path=HISTORY_DIR/(model_name+".csv")
     )
 
 
-
-
-train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR/"train", VALIDATION_DATASET_BASE_FOLDER=DATASET_DIR/"validate", config=train_config, path_config=path_config, parallel=True)
+train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR/"train", VALIDATION_DATASET_BASE_FOLDER=DATASET_DIR/"train", TRAIN_CSV=CSV_DIR/"train.csv", VALIDATION_CSV=CSV_DIR/"validation.csv", config=train_config, path_config=path_config, history_dir=HISTORY_DIR, parallel=True)

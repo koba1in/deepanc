@@ -20,12 +20,12 @@ def stft(wave, delay):
     stft = torch.permute(stft, (0, 3, 2, 1))
     return stft
 
-def istft(stft):
+def istft(stft, length=None):
     #[Batch, 2, T, 161] -> [Batch, time]
     window = torch.hamming_window(N_FFT).to(stft.device)
     stft = torch.permute(stft, (0, 3, 2, 1)).contiguous()
     stft_complex = torch.view_as_complex(stft)
-    wave = torch.istft(stft_complex, N_FFT, HOP_LENGTH, window=window, center=False,)
+    wave = torch.istft(stft_complex, N_FFT, HOP_LENGTH, window=window, center=False, length=length)
     return wave
     
 def fls(wave, etas):
@@ -48,11 +48,11 @@ def fls(wave, etas):
 
     return torch.where(linear_mask, wave, result)
 
-def spec_to_antinoise(spec, Sec_pathes, etas):
+def spec_to_antinoise(spec, Sec_pathes, etas, length=None):
     #spec: [batch, 2, T, 161]
     #Sec_pathes: [batch, 1, numtaps]
     #etas: [batch, 1]
-    wave = istft(spec)
+    wave = istft(spec, length=length)
     wave = fls(wave, etas)
     wave = apply_impulse_response(wave, Sec_pathes)
     return wave
