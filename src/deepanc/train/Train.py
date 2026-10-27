@@ -112,12 +112,16 @@ def train(model, train_loader, validation_loader, config, Paths, etas,):
         if config.history_path is not None:
             with open(config.history_path, mode="a", encoding="utf-8", newline="", ) as file:
                 writer = csv.writer(file)
-                writer.writerow([train_loss, validate_loss])
+                writer.writerow([train_loss, validate_loss, train_nmse, validate_nmse])
+
+    if not config.best_model_selection:
+        torch.save(model.state_dict(), config.model_path)
+        print("model saved at " + str(config.model_path))
 
     print("Finished training")
     return train_loss_epochs, nmse_min_train, validate_loss_epochs, nmse_min
 
-def  train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, TRAIN_CSV, VALIDATION_CSV, config, path_config, history_dir, parallel=True):
+def  train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, TRAIN_CSV, VALIDATION_CSV, config, path_config, parallel=True):
 
     model = crn_model
     gpus = torch.cuda.device_count() if (config.device.type == "cuda") else 0
@@ -132,9 +136,9 @@ def  train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, T
 
     if config.history_path is not None:
         config.history_path.touch()
-        with open(config.history_path, mode="a", encoding="utf-8", newline="", ) as file:
+        with open(config.history_path, mode="w", encoding="utf-8", newline="", ) as file:
             writer = csv.writer(file)
-            writer.writerow(["train_loss", "validate_loss"])
+            writer.writerow(["train_loss", "validate_loss", "train_nmse", "validate_nmse"])
 
     train_data = MyDataset(TRAIN_DATASET_BASE_FOLDER, TRAIN_CSV)
     validate_data = MyDataset(VALIDATION_DATASET_BASE_FOLDER, VALIDATION_CSV)

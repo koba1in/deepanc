@@ -33,11 +33,12 @@ class Deep_ANC_controller():
     def noise_cancellation(self, Dis, waveform):
         if waveform.ndim == 1:
             waveform = waveform.unsqueeze(0)
+        length = waveform.shape[1]
         waveform = waveform.to(self.device)
         Dis = Dis.to(self.device)
         complex_spectrogram = stft(waveform, self.delay)
         complex_spectrogram = self.model(complex_spectrogram)
-        antinoise = spec_to_antinoise(complex_spectrogram, self.sec_path, self.eta)
+        antinoise = spec_to_antinoise(complex_spectrogram, self.sec_path, self.eta, length)
         e = Dis - antinoise
-        return e.tolist()
+        return e
 

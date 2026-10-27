@@ -5,6 +5,8 @@ from scipy import signal
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+import soundfile as sf
+import sys
 
 def BandlimitedNoise_generation(f_start, Bandwidth, fs, N):
     #音声時間 = N / fs
@@ -30,13 +32,14 @@ def BandlimitFilter_generation(f_starts, Bandwidthes, fs, device, type=np.float3
 
 class SoundGenerator():
     
-    def __init__(self, min, max, fs, time, folder, type=np.float32):
+    def __init__(self, min, max, fs, time, folder, subtype="float32"):
         self.min = min
         self.max = max
         self.fs = fs
         self.len = fs * time
         self.folder = Path(folder)
         self.Num = 1
+        self.subtype = subtype
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.folder.mkdir(parents=True, exist_ok=True)
         
@@ -46,9 +49,16 @@ class SoundGenerator():
         f_end = f_star + bandWidth 
         filename = f'{self.Num}_from_{f_star}_to_{f_end}_Hz.wav'
         filePath = Path(self.folder)/filename
-        noise = BandlimitedNoise_generation(f_star, bandWidth, self.fs, self.len) 
-        noise = torch.from_numpy(noise).type(torch.float32).unsqueeze(0)
-        torchaudio.save(filePath, noise, self.fs)
+        noise = BandlimitedNoise_generation(f_star, bandWidth, self.fs, self.len)
+        if self.subtype == "PCM_16":
+            noise = noise.reshape(-1, 1)
+            sf.write(filePath, noise, self.fs, self.subtype)
+        elif self.subtype == "float32":
+            noise = torch.from_numpy(noise).type(torch.float32).unsqueeze(0)
+            torchaudio.save(filePath, noise, self.fs)
+        else:
+            print(f"not supported subtype : {self.subtype}")
+            sys.exit(1)
         self.Num += 1 
         return f_star, f_end, filename
     

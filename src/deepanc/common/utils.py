@@ -48,23 +48,27 @@ def fls(wave, etas):
 
     return torch.where(linear_mask, wave, result)
 
-def spec_to_antinoise(spec, Sec_pathes, etas, length=None):
+def spec_to_antinoise(spec, Sec_paths, etas, length=None):
     #spec: [batch, 2, T, 161]
-    #Sec_pathes: [batch, 1, numtaps]
+    #Sec_paths: [batch, 1, numtaps]
     #etas: [batch, 1]
-    wave = istft(spec, length=length)
+    wave = istft(spec, length)
     wave = fls(wave, etas)
-    wave = apply_impulse_response(wave, Sec_pathes)
+    wave = apply_impulse_response(wave, Sec_paths)
     return wave
 
-def apply_impulse_response(wave, pathes):
-    #wave: [batch, time]
-    #pathes: [batch, 1, numtaps]
+def apply_impulse_response(wave, paths):
+    #wave: [batch, time] or [time]
+    #paths: [batch, 1, numtaps] or [1, numtaps]
+    if wave.ndim == 1:
+        wave = wave.unsqueeze(0)
+    if paths.ndim == 2:
+        paths = paths.unsqueeze(0)
     batch_size = wave.shape[0]
     wave = wave.unsqueeze(0)
-    wave = F.pad(wave, (pathes.shape[2]-1, 0), "constant", 0)
-    pathes = pathes.flip(-1)
-    wave = F.conv1d(wave, pathes, groups=batch_size)
+    wave = F.pad(wave, (paths.shape[2]-1, 0), "constant", 0)
+    paths = paths.flip(-1)
+    wave = F.conv1d(wave, paths, groups=batch_size)
     wave = wave.squeeze(0)
     return wave
 
