@@ -15,11 +15,11 @@ class Deep_ANC_controller():
     def __init__(self, MODEL_PATH, device, fs, delay, eta, secondary_path):
         model = crn_model
         load_weight_for_model(model, MODEL_PATH, device)
-        model = model.to(device)
-        model.eval()
         
         self.device = device
         self.model = model
+        self.model.to(device)
+        self.model.eval()
         self.fs = fs
         self.delay = delay
         if eta.ndim == 1:
@@ -31,14 +31,15 @@ class Deep_ANC_controller():
         self.sec_path = secondary_path.to(device)
         
     def noise_cancellation(self, Dis, waveform):
-        if waveform.ndim == 1:
-            waveform = waveform.unsqueeze(0)
-        length = waveform.shape[1]
-        waveform = waveform.to(self.device)
-        Dis = Dis.to(self.device)
-        complex_spectrogram = stft(waveform, self.delay)
-        complex_spectrogram = self.model(complex_spectrogram)
-        antinoise = spec_to_antinoise(complex_spectrogram, self.sec_path, self.eta, length)
-        e = Dis - antinoise
-        return e
+        with torch.no_grad():
+            if waveform.ndim == 1:
+                waveform = waveform.unsqueeze(0)
+            length = waveform.shape[1]
+            waveform = waveform.to(self.device)
+            Dis = Dis.to(self.device)
+            complex_spectrogram = stft(waveform, self.delay)
+            complex_spectrogram = self.model(complex_spectrogram)
+            antinoise = spec_to_antinoise(complex_spectrogram, self.sec_path, self.eta, length)
+            e = Dis - antinoise
+            return e
 
