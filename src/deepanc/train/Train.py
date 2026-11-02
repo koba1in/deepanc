@@ -114,16 +114,15 @@ def train(model, train_loader, validation_loader, config, Paths, etas,):
                 writer = csv.writer(file)
                 writer.writerow([train_loss, validate_loss, train_nmse, validate_nmse])
 
-    if not config.best_model_selection:
+    if config.model_path and not config.best_model_selection:
         torch.save(model.state_dict(), config.model_path)
         print("model saved at " + str(config.model_path))
 
     print("Finished training")
     return train_loss_epochs, nmse_min_train, validate_loss_epochs, nmse_min
 
-def  train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, TRAIN_CSV, VALIDATION_CSV, config, path_config, parallel=True):
+def  train_validate(TRAIN_DATASET_BASE_FOLDER, VALIDATION_DATASET_BASE_FOLDER, TRAIN_CSV, VALIDATION_CSV, model, config, path_config, parallel=True):
 
-    model = crn_model
     gpus = torch.cuda.device_count() if (config.device.type == "cuda") else 0
     use_parallel = parallel and gpus > 1
     num_devices = gpus if use_parallel else 1
