@@ -130,7 +130,7 @@ construct-dataset-from-freesound --split train --path ./Datasets --license CC0-1
    `notebooks/1.Synthesize_Download_data/analyze_freesound.ipynb` を上から実行し、`Datasets/statistics/train.csv` と `validation.csv` を作成します。
 
 4. **RIR を生成する**  
-   `notebooks/1.Synthesize_Download_data/make_rir.ipynb` を実行します。実行前に、保存先ディレクトリ作成の引数を `exists_ok=True` から `exist_ok=True` に修正してください。生成した RIR は `rirs/` に配置されます。
+   `notebooks/1.Synthesize_Download_data/make_rir.ipynb` を実行します。生成した RIR は `rirs/` に配置されます。
 
 5. **モデルを学習する**  
    `notebooks/2.Train_Network/Train_Network.ipynb` または `notebooks/2.Train_Network/Train_Network.py` を使います。Notebook の `verify` は現在 `True` なので、全データで学習する場合は `False` に変更してください。学習設定は `src/deepanc/train/config.py` の `TrainConfig` で管理します。
@@ -138,11 +138,7 @@ construct-dataset-from-freesound --split train --path ./Datasets --license CC0-1
 6. **ANC 評価を実行する**  
    NOISEX-92 の音源を `NOISEX92/<noise_name>/signal.wav` の形式で配置し、`notebooks/3.Noise_Cancellation_Code/Noise_Cancellation.ipynb` を実行します。Notebook は評価音源ごとに NMSE を出力します。
 
-Notebook を起動する例:
 
-```bash
-jupyter lab
-```
 
 合成雑音で学習する場合は、先に `notebooks/1.Synthesize_Download_data/make_synthesized_data.ipynb` を実行し、`Dataset/` 以下に合成音声を生成してください。現在の設定では train 2,000 件、validate 1,000 件、test 5 件の、16 kHz・10 秒のバンド制限雑音を作成します。Freesound 用の `Datasets/` と合成音声用の `Dataset/` は別のディレクトリです。
 
