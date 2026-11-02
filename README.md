@@ -1,12 +1,12 @@
 # DeepANC
 
-DeepANC 論文の手法を PyTorch で実装・実験するための研究プロジェクトです。合成雑音および Freesound 音源の準備、室内インパルス応答（RIR）の生成、モデル学習、能動騒音制御（ANC）の評価を行います。
+DeepANC 論文の手法を PyTorch で実装・実験する研究プロジェクトです。合成雑音および Freesound 音源の準備、室内インパルス応答（RIR）の生成、モデル学習、能動騒音制御（ANC）の評価を行います。
 
-本リポジトリは、論文で提案された手法の実験コードと、このリポジトリで整備した学習・データ準備の処理を含みます。手法自体の提案者と、本リポジトリでの実装・追加部分を区別してご覧ください。
+本リポジトリには、論文で提案された手法の実験コードと、本リポジトリで整備した学習・データ準備処理を含みます。論文由来の手法と、本リポジトリで実装・追加した部分を区別してご覧ください。
 
 ## 提供モデル
 
-GitHub リポジトリの `models/` には、学習済み重みを含めています。
+GitHub リポジトリの `models/` に学習済み重みを含めています。
 
 | ファイル | 学習データ | 設定 |
 | --- | --- | --- |
@@ -19,13 +19,13 @@ GitHub リポジトリの `models/` には、学習済み重みを含めてい�
 
 ```text
 .
-├── models/                           # GitHub に登録された学習済み重み
+├── models/                           # 学習済み重み
 ├── Datasets/
 │   └── statistics/                   # Freesound 音源のマニフェスト CSV
 ├── Dataset/                          # 合成音声データ
 ├── rirs/                             # 生成した室内インパルス応答
 ├── history/                          # 学習損失・NMSE の履歴 CSV
-├── NOISEX92/                         # 最終評価用音声（別途用意）
+├── NOISEX92/                         # ANC 評価用音声（別途取得）
 ├── notebooks/
 │   ├── 1.Synthesize_Download_data/
 │   ├── 2.Train_Network/
@@ -39,45 +39,47 @@ GitHub リポジトリの `models/` には、学習済み重みを含めてい�
 └── pyproject.toml
 ```
 
-Notebook は `pyprojroot.here()` でプロジェクトルートを探します。リポジトリをインストールした環境の Jupyter カーネルを選択して実行してください。
+Notebook は `pyprojroot.here()` でプロジェクトルートを探します。インストールした環境を Jupyter のカーネルとして選択してください。
 
-## 主な変更・機能
+## 主な機能
 
-- 論文の DeepANC 手法を CRN、STFT/ISTFT、音響経路の畳み込み、NMSE 評価に分けて実装
-- Freesound 音源を取得する CLI を別リポジトリとして用意し、DeepANC から利用
-- Freesound のファイル一覧を CSV マニフェストで管理し、FLAC 音源を学習データとして読み込み
-- 可変長音声をバッチ化する collate 処理を追加
-- 学習・検証の損失と NMSE を `history/` に保存
-- 学習済み重みを `models/` に提供
+- DeepANC の CRN、STFT/ISTFT、音響経路の畳み込み、NMSE 評価
+- Freesound 音源の取得と FLAC 形式への変換
+- Freesound 音源一覧の CSV マニフェスト化
+- 可変長音声のバッチ化
+- 学習・検証損失と NMSE の CSV 保存
+- 学習済み重みの保存と配布
 
 手法の出典は [Deep ANC: A deep learning approach to active noise control](https://www.sciencedirect.com/science/article/pii/S0893608021001258) です。Freesound 音源の取得には [construct-dataset-from-freesound](https://github.com/koba1in/construct-dataset-from-freesound) を使用します。
 
 ## 必要環境とインストール
 
 - Python 3.10 以上
-- uv または pip
-- Freesound データセットの取得には Hugging Face Read トークン
-- GPU 学習を行う場合は、環境に適合する CUDA 対応 PyTorch
+- `uv` または `pip`
+- Freesound 音源の取得には Hugging Face Read トークン
+- GPU 学習を行う場合は、環境に合った CUDA 対応 PyTorch
 
-通常の依存関係、Freesound 取得 CLI、および分析 Notebook 用の Polars をインストールする例です。
+プロジェクトルートで通常の依存関係と分析 Notebook 用依存関係をインストールします。
 
 ```bash
 uv pip install -e ".[normal,polars]"
 uv pip install seaborn
 ```
 
-pip を使う場合:
+`pip` を使う場合:
 
 ```bash
 python -m pip install -e ".[normal,polars]"
 python -m pip install seaborn
 ```
 
-`normal` と `titanx` は異なる PyTorch / torchaudio バージョンを指定するため、同時に選ばず、利用環境に合う方を使ってください。Freesound 分析 Notebook は `polars` と `seaborn` も使用します。
+`normal` と `titanx` は異なる PyTorch / torchaudio バージョンを指定するため、同時に選ばず利用環境に合う方を選択してください。Freesound 分析 Notebook は `polars` と `seaborn` も使用します。
 
-## Freesound 音源の取得と準備
+## データセット
 
-取得ツールは Hugging Face の [benjamin-paine/freesound-laion-640k](https://huggingface.co/datasets/benjamin-paine/freesound-laion-640k) をストリーミングで読み込みます。トークンを環境変数 `HF_TOKEN` に設定してください。
+### Freesound 音源（学習用）
+
+取得ツールは Hugging Face の [benjamin-paine/freesound-laion-640k](https://huggingface.co/datasets/benjamin-paine/freesound-laion-640k) をストリーミングで読み込みます。取得前に Hugging Face Read トークンを用意し、環境変数 `HF_TOKEN` に設定してください。
 
 macOS / Linux:
 
@@ -91,83 +93,77 @@ Windows PowerShell:
 $env:HF_TOKEN = "hf_..."
 ```
 
-プロジェクトルートから、例として CC0 と CC BY 4.0 の音源を取得します。
+プロジェクトルートで、学習 split の CC0 音源を取得するには次を実行します。
 
 ```bash
-construct-dataset-from-freesound \
-  --split train test \
-  --path ./Datasets \
-  --license CC0-1.0 CC-BY-4.0
+construct-dataset-from-freesound --split train --path ./Datasets --license CC0-1.0
 ```
 
-出力は次の形式です。
+音声は `Datasets/train/` に `<freesound_id>.flac` として保存されます。出力は 16 kHz、モノラル、16-bit PCM の FLAC です。同名ファイルはスキップされます。不完全なファイルが残った場合は削除してから再実行してください。
 
-```text
-Datasets/
-├── train/
-│   └── <freesound_id>.flac
-└── test/
-    └── <freesound_id>.flac
-```
+### Speech and Noise Corpora（評価用データセット参照先）
 
-音声は 16 kHz、モノラル、16-bit PCM の FLAC として保存されます。取得ツールは同名ファイルをスキップします。不完全なファイルが残った場合は、そのファイルを削除してから再取得してください。
+音声評価用データセットの参照先として、Zenodo の [Speech and Noise Corpora for Pitch Estimation of Human Speech](https://zenodo.org/records/3921794) を掲載しています。このレコードには複数の音声・雑音コーパスが含まれ、その中に `NOISEX92.zip` があります。本プロジェクトの現行評価 Notebook は NOISEX-92 音源を参照します。Zenodo から必要なデータを取得し、展開後、後述のフォルダー構成に合わせて配置してください。
 
-### マニフェストの作成
+このZenodoレコードはピッチ推定評価向けのコーパス集です。本プロジェクトでは収録されているNOISEX-92の雑音音源をANC評価に利用する想定です。各コーパスの利用条件は異なるため、ダウンロード・利用・再配布の前に個別のライセンスと条件を確認してください。
 
-`notebooks/1.Synthesize_Download_data/analyze_freesound.ipynb` は `Datasets/train/` の音源を調べ、`Datasets/statistics/` に `train.csv` と `validation.csv` を作成します。現在のNotebook設定では、録音時間によって次のように選びます。
+### Freesound マニフェスト
+
+`notebooks/1.Synthesize_Download_data/analyze_freesound.ipynb` は `Datasets/train/` の音源を調べ、`Datasets/statistics/` に `train.csv` と `validation.csv` を作成します。現在の Notebook 設定では、録音時間を基準に次の範囲で選びます。
 
 - 学習用: 6～12 秒
 - 検証用: 20.0～20.1 秒
 
-この設定では、学習用と検証用の録音時間の分布が異なります。データや実験目的に合わせて範囲を見直してください。確認実行用の `verify_train.csv` と `verify_validation.csv` は、それぞれ少数の音源を指すマニフェストです。
+この設定では学習用と検証用で録音時間の分布が異なります。データや実験目的に応じて範囲を見直してください。`verify_train.csv` と `verify_validation.csv` は動作確認用の少数音源を指すマニフェストです。
 
-## 合成雑音と RIR の生成
+## プログラムの実行手順
 
-### 合成雑音
+以下は、Freesound 音源を使ってデータ準備から学習・評価まで進める基本手順です。コマンドと Notebook はプロジェクトルートから実行します。
 
-`notebooks/1.Synthesize_Download_data/make_synthesized_data.ipynb` は次の合成音声を作ります。
+1. **依存関係をインストールする**  
+   「必要環境とインストール」の手順を実行します。Freesound 音源を取得する場合は、`HF_TOKEN` も設定します。
 
-- `Dataset/train/`: 2,000 件
-- `Dataset/validate/`: 1,000 件
-- `Dataset/test/`: 5 件
-- 16 kHz、10 秒、20～7,980 Hz のバンド制限雑音
+2. **Freesound 音源を取得する**  
+   「データセット」節のコマンドを実行し、`Datasets/train/` に音源を用意します。
 
-Freesound 学習のNotebookは `Datasets/train/` と `Datasets/statistics/*.csv` を使用します。合成音声は別の `Dataset/` 以下に保存されるため、保存先を混同しないでください。
+3. **マニフェストを作成する**  
+   `notebooks/1.Synthesize_Download_data/analyze_freesound.ipynb` を上から実行し、`Datasets/statistics/train.csv` と `validation.csv` を作成します。
 
-### RIR
+4. **RIR を生成する**  
+   `notebooks/1.Synthesize_Download_data/make_rir.ipynb` を実行します。実行前に、保存先ディレクトリ作成の引数を `exists_ok=True` から `exist_ok=True` に修正してください。生成した RIR は `rirs/` に配置されます。
 
-`notebooks/1.Synthesize_Download_data/make_rir.ipynb` は、既定の室寸法と RT60 条件から、`rirs/rt60_0.15s/` から `rirs/rt60_0.25s/` までの経路を生成します。
+5. **モデルを学習する**  
+   `notebooks/2.Train_Network/Train_Network.ipynb` または `notebooks/2.Train_Network/Train_Network.py` を使います。Notebook の `verify` は現在 `True` なので、全データで学習する場合は `False` に変更してください。学習設定は `src/deepanc/train/config.py` の `TrainConfig` で管理します。
 
-**実行前の修正:** 現在のNotebookには `save_dir.mkdir(parents=True, exists_ok=True)` という引数名の誤記があります。実行セルでは `exists_ok=True` を `exist_ok=True` に直してください。
+6. **ANC 評価を実行する**  
+   NOISEX-92 の音源を `NOISEX92/<noise_name>/signal.wav` の形式で配置し、`notebooks/3.Noise_Cancellation_Code/Noise_Cancellation.ipynb` を実行します。Notebook は評価音源ごとに NMSE を出力します。
 
-## 学習
+Notebook を起動する例:
 
-主な学習入口は次の2つです。
+```bash
+jupyter lab
+```
 
-- `notebooks/2.Train_Network/Train_Network.ipynb`
-- `notebooks/2.Train_Network/Train_Network.py`
+合成雑音で学習する場合は、先に `notebooks/1.Synthesize_Download_data/make_synthesized_data.ipynb` を実行し、`Dataset/` 以下に合成音声を生成してください。現在の設定では train 2,000 件、validate 1,000 件、test 5 件の、16 kHz・10 秒のバンド制限雑音を作成します。Freesound 用の `Datasets/` と合成音声用の `Dataset/` は別のディレクトリです。
 
-現在の Freesound 学習設定は `Datasets/train/` を音源フォルダーとして、`Datasets/statistics/train.csv` と `validation.csv` のマニフェストで学習・検証対象を選びます。RIR は `rirs/` から読み込み、学習履歴を `history/freesound_delay_1.csv`、重みを `models/freesound_delay_1.pth` に保存します。
+## 学習出力
 
-Notebook の `verify` は現在 `True` です。この状態では確認用マニフェストを使って少数音源だけを学習します。全マニフェストで学習する場合は `verify = False` にしてください。確認実行と本学習で保存先が同じため、確認モデルで既存の重みを上書きしないよう、必要なら保存先を変更してください。
+Freesound 学習では、履歴を `history/freesound_delay_1.csv`、重みを `models/freesound_delay_1.pth` に保存する設定です。学習時の設定にはモデル名、遅延、バッチサイズ、デバイス、エポック数、履歴ファイルのパスなどがあります。
 
-学習時の設定は `src/deepanc/train/config.py` の `TrainConfig` で管理します。モデル名、遅延、バッチサイズ、デバイス、エポック数、履歴ファイルのパスを設定できます。
+Notebook の確認実行と本学習は同じ出力先を使う設定です。確認用学習が既存の重みや履歴を上書きしないよう、実行前に保存先を確認してください。実験ごとに出力先を分ける場合は、重みと履歴を同じ実験ディレクトリに保存する方法が便利です。
 
 ## ANC 評価
 
-`notebooks/3.Noise_Cancellation_Code/Noise_Cancellation.ipynb` は、現在 `NOISEX92/<noise_name>/signal.wav` 形式の入力を読み込み、指定した RIR と `models/freesound_delay_1.pth` を用いて ANC を評価します。Notebook は評価音源ごとに NMSE を出力します。
-
-NOISEX-92 の音源はリポジトリに含めていません。利用条件を確認のうえ別途入手し、Notebookが参照するフォルダー構成に配置してください。Freesound 取得ツールの `test` split と NOISEX-92 は別のデータです。現行の評価 Notebook が参照するのは NOISEX-92 です。
+`notebooks/3.Noise_Cancellation_Code/Noise_Cancellation.ipynb` は `NOISEX92/<noise_name>/signal.wav` 形式の入力を読み込み、指定した RIR と学習済みモデルで ANC を評価します。現行Notebookの既定モデルは `models/freesound_delay_1.pth` です。Freesound 取得ツールの Hugging Face `test` split と NOISEX-92 は別のデータです。
 
 ## データ、モデル、ライセンス
 
-音声データや生成した RIR はローカルで用意します。Freesound 音源には作品ごとのライセンスが適用されます。再配布や学習済みモデルの公開を行う前に、対象音源のライセンス条件と CC-BY の帰属表示義務などを確認してください。
+音声データや生成した RIR はローカルで用意します。Freesound 音源には作品ごとのライセンスが適用されます。再配布や学習済みモデルの公開を行う前に、利用した音源のライセンス条件や CC-BY の帰属表示義務を確認してください。NOISEX-92を含むZenodo収録データも、コーパスごとの利用条件を確認してください。
 
-`.gitignore` は一般の生成チェックポイント `*.pth` を除外します。GitHub に登録済みの `models/freesound_delay_1.pth` と `models/synthesized_delay_1.pth` は、このリポジトリで配布する学習済み重みです。重みを更新する場合は、Git上で追跡対象になっていることを確認してください。音源・RIR・モデルの再配布条件も個別に確認してください。
+`.gitignore` は一般の生成チェックポイント `*.pth` を除外します。GitHub に登録済みの `models/freesound_delay_1.pth` と `models/synthesized_delay_1.pth` は、このリポジトリで配布する重みです。重みを更新する場合は、Git上で追跡対象になっていることを確認してください。音源・RIR・モデルの再配布条件も個別に確認してください。
 
 ## 既知の制約
 
-- Freesound 音源は可変長です。現行の collate 処理はバッチ内でゼロ埋めしますが、損失・NMSEは元の音声長でマスクされません。音源長の異なるデータを比較する際は、この影響を考慮してください。
-- `istft` はSTFTフレーム長に合わない入力で末尾をゼロ埋めする場合があります。評価Notebookに警告が出る場合、出力長と対象区間を確認してください。
-- Freesound の配布物、NOISEX-92、RIR生成結果はこのリポジトリに含まれていません。再現には各データの準備が必要です。
- 
+- Freesound 音源は可変長です。現行の collate 処理はバッチ内でゼロ埋めしますが、損失・NMSEでは元の音声長に応じたマスクを適用しません。音源長の異なるデータを比較する際は、この影響を考慮してください。
+- `istft` は STFT フレーム長に合わない入力で末尾をゼロ埋めする場合があります。評価 Notebook に警告が出る場合は、出力長と対象区間を確認してください。
+- Freesound 音源、NOISEX-92、RIR 生成結果はリポジトリに含まれていません。再現には各データの準備が必要です。
