@@ -1,7 +1,7 @@
 from pyprojroot import here
 PROJECT_ROOT = here()
-DATASET_DIR = PROJECT_ROOT / "noise_fullband" / "resampled"
-# CSV_DIR = DATASET_DIR / "statistics"
+DATASET_DIR = PROJECT_ROOT / "Datasets"
+CSV_DIR = DATASET_DIR / "statistics"
 MODEL_DIR = PROJECT_ROOT / "models"
 RIR_DIR = PROJECT_ROOT / "rirs"
 HISTORY_DIR = PROJECT_ROOT / "history"
@@ -41,6 +41,8 @@ train_config = TrainConfig(
     best_model_selection=True,
     )
 
+from deepanc.common.Network import CRN, default_channels, ModelType
+model = CRN(default_channels, ModelType.SKIP)
 
-# train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR/"train", VALIDATION_DATASET_BASE_FOLDER=DATASET_DIR/"train", TRAIN_CSV=CSV_DIR/"train.csv", VALIDATION_CSV=CSV_DIR/"validation.csv", config=train_config, path_config=path_config, parallel=True)
-train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR, VALIDATION_DATASET_BASE_FOLDER=PROJECT_ROOT/"Datasets"/"train", TRAIN_CSV=None, VALIDATION_CSV=PROJECT_ROOT/"Datasets"/"statistics"/"validation.csv", config=train_config, path_config=path_config, parallel=True)
+train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR/"train", VALIDATION_DATASET_BASE_FOLDER=DATASET_DIR/"train", TRAIN_CSV=CSV_DIR/"train.csv", VALIDATION_CSV=CSV_DIR/"validation.csv", model=model, config=train_config, path_config=path_config, parallel=True)
+# train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR, VALIDATION_DATASET_BASE_FOLDER=PROJECT_ROOT/"Datasets"/"train", TRAIN_CSV=None, VALIDATION_CSV=PROJECT_ROOT/"Datasets"/"statistics"/"validation.csv", config=train_config, path_config=path_config, parallel=True)

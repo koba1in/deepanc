@@ -40,8 +40,8 @@ train_config = TrainConfig(
     best_model_selection=False,
     )
 
-from deepanc.common.Network import crn_res_model
-model = crn_res_model
+from deepanc.common.Network import CRN, default_channels, ModelType
+model = CRN(default_channels, ModelType.RES)
 
 train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR/"train", VALIDATION_DATASET_BASE_FOLDER=DATASET_DIR/"train", TRAIN_CSV=CSV_DIR/"train.csv", VALIDATION_CSV=CSV_DIR/"validation.csv", model=model, config=train_config, path_config=path_config, parallel=True)
 # train_validate(TRAIN_DATASET_BASE_FOLDER=DATASET_DIR, VALIDATION_DATASET_BASE_FOLDER=PROJECT_ROOT/"Datasets"/"train", TRAIN_CSV=None, VALIDATION_CSV=PROJECT_ROOT/"Datasets"/"statistics"/"validation.csv", config=train_config, path_config=path_config, parallel=True)

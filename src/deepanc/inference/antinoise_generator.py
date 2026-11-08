@@ -1,6 +1,6 @@
 import torch
 
-from deepanc.common.Network import crn_model
+from deepanc.common.Network import CRN, default_channels, ModelType
 from deepanc.common.utils import stft, spec_to_antinoise
 
 def load_weight_for_model(model, pretrained_path, device):
@@ -12,8 +12,8 @@ def load_weight_for_model(model, pretrained_path, device):
     
 class Deep_ANC_controller():
     
-    def __init__(self, MODEL_PATH, device, fs, delay, eta, secondary_path):
-        model = crn_model
+    def __init__(self, MODEL_PATH, modeltype: ModelType, device, fs, delay, eta, secondary_path):
+        model = CRN(default_channels, modeltype)
         load_weight_for_model(model, MODEL_PATH, device)
         
         self.device = device
