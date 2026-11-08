@@ -160,11 +160,11 @@ class CRN(torch.nn.Module):
         x = torch.permute(x, (0, 2, 1, 3))
         temp_size = x.size()
         x = x.reshape(x.size(0), x.size(1), -1)
-        # [Batch, channel, T * freq]
+        # [Batch, T, channel * freq]
         x = self.RNNBlocks(x)
         x = x.reshape(temp_size)
         x = torch.permute(x, (0, 2, 1, 3))
-        # [Batch, T, channel, freq]
+        # [Batch, channel, T, freq]
         # DecConv
         x_real = None
         x_image = None
