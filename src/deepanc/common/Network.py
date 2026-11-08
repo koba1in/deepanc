@@ -134,60 +134,62 @@ class CRN(torch.nn.Module):
         self.RNNBlocks = RNNBlock(input_size=1024, hidden_size=1024, num_layers=2,)
 
     def forward(self, x):
-        #x: [Batch, channel, T, 161]
+        #x: [Batch, channel, T, freq]
         match self.modeltype:
             case ModelType.NONE:
                 pass
             case _:
-                ids = []
+                idens = []
         
         sizes = []
         sizes.append((x.size(0), 1, x.size(2), x.size(3)))
-        
+
+        # Conv
         for ConvBlock in self.ConvBlocks:
             x = ConvBlock(x)
             match self.modeltype:
                 case ModelType.NONE:
                     pass
                 case _:
-                    ids.append(x)
+                    idens.append(x)
 
             sizes.append(x.size())
         sizes.pop()
-        
+        # [Batch, channel, T, freq]
+        # RNN
         x = torch.permute(x, (0, 2, 1, 3))
         temp_size = x.size()
         x = x.reshape(x.size(0), x.size(1), -1)
-        #x: [Batch, T, 1024]
+        # [Batch, channel, T * freq]
         x = self.RNNBlocks(x)
         x = x.reshape(temp_size)
         x = torch.permute(x, (0, 2, 1, 3))
-        
-        #x: [Batch, channel, T, 4]
+        # [Batch, T, channel, freq]
+        # DecConv
         x_real = None
         x_image = None
-        id = None
+        iden = None
         for DecBlockReal, DecBlockImage in zip(self.DecBlocksReal, self.DecBlocksImage):
             match self.modeltype:
                 case ModelType.NONE:
                     pass
                 case ModelType.SKIP:
-                    id = ids.pop()
+                    iden = idens.pop()
                 case ModelType.RES:
-                    res = ids.pop()
+                    res = idens.pop()
                     if x_real is None:
                         x = x + res
                     else:
                         x_real, x_image = x_real + res, x_image + res
             size = sizes.pop()
             if x_real is None:
-                x_real = DecBlockReal(id, x, size)
-                x_image = DecBlockImage(id, x, size)
+                x_real = DecBlockReal(iden, x, size)
+                x_image = DecBlockImage(iden, x, size)
             else:
-                x_real = DecBlockReal(id, x_real, size)
-                x_image = DecBlockImage(id, x_image, size)
+                x_real = DecBlockReal(iden, x_real, size)
+                x_image = DecBlockImage(iden, x_image, size)
         x = torch.concat((x_real, x_image), dim=1)
-        #x: [Batch, 2, T, 161]
+        #x: [Batch, 2, T, freq]
         return x
 
 
