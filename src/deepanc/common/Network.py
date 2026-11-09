@@ -135,27 +135,21 @@ class CRN(torch.nn.Module):
 
     def forward(self, x):
         #x: [Batch, channel, T, freq]
-        match self.modeltype:
-            case ModelType.NONE:
-                pass
-            case _:
-                idens = []
-        
+
+        features = []
         sizes = []
         sizes.append((x.size(0), 1, x.size(2), x.size(3)))
 
         # Conv
         for ConvBlock in self.ConvBlocks:
             x = ConvBlock(x)
-            match self.modeltype:
-                case ModelType.NONE:
-                    pass
-                case _:
-                    idens.append(x)
 
+            features.append(x)
             sizes.append(x.size())
+
         sizes.pop()
         # [Batch, channel, T, freq]
+
         # RNN
         x = torch.permute(x, (0, 2, 1, 3))
         temp_size = x.size()
@@ -165,35 +159,38 @@ class CRN(torch.nn.Module):
         x = x.reshape(temp_size)
         x = torch.permute(x, (0, 2, 1, 3))
         # [Batch, channel, T, freq]
+        
         # DecConv
         x_real = None
         x_image = None
-        iden = None
+        skip_feature = None
         for DecBlockReal, DecBlockImage in zip(self.DecBlocksReal, self.DecBlocksImage):
             match self.modeltype:
                 case ModelType.NONE:
                     pass
                 case ModelType.SKIP:
-                    iden = idens.pop()
+                    skip_feature = features.pop()
                 case ModelType.RES:
-                    res = idens.pop()
+                    res = features.pop()
                     if x_real is None:
                         x = x + res
                     else:
                         x_real, x_image = x_real + res, x_image + res
             size = sizes.pop()
             if x_real is None:
-                x_real = DecBlockReal(iden, x, size)
-                x_image = DecBlockImage(iden, x, size)
+                x_real = DecBlockReal(skip_feature, x, size)
+                x_image = DecBlockImage(skip_feature, x, size)
             else:
-                x_real = DecBlockReal(iden, x_real, size)
-                x_image = DecBlockImage(iden, x_image, size)
+                x_real = DecBlockReal(skip_feature, x_real, size)
+                x_image = DecBlockImage(skip_feature, x_image, size)
         x = torch.concat((x_real, x_image), dim=1)
         #x: [Batch, 2, T, freq]
         return x
 
 
 default_channels = [16, 32, 64, 128, 256]
-crn_model = CRN(default_channels, ModelType.SKIP)
-crn_noskipconnection_model = CRN(default_channels, ModelType.NONE)
-crn_res_model = CRN(default_channels, ModelType.RES)
+
+# model names
+# crn_model = CRN(default_channels, ModelType.SKIP)
+# crn_noskipconnection_model = CRN(default_channels, ModelType.NONE)
+# crn_res_model = CRN(default_channels, ModelType.RES)

@@ -4,7 +4,6 @@ import torch.optim as optim
 import math
 import csv
 
-from deepanc.common.Network import crn_model
 from deepanc.common.MyDataLoader import MyDataset
 from deepanc.common.utils import loss, stft, spec_to_antinoise, loading_paths_from_MAT, apply_impulse_response
 from deepanc.common.collate import collate_fn
